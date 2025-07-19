@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Globe, Mail, Download, Send, Key, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const EmailScraper = () => {
   const [url, setUrl] = useState('');
@@ -127,25 +128,27 @@ const EmailScraper = () => {
 
     setIsConnecting(true);
     try {
-      // GetResponse API call to get campaigns (lists)
-      const response = await fetch('https://api.getresponse.com/v3', {
-        headers: {
-          'X-Auth-Token': `api-key ${getResponseApiKey}`,
-          'Content-Type': 'application/json',
-        },
+      const { data, error } = await supabase.functions.invoke('getresponse-api', {
+        body: {
+          action: 'getCampaigns',
+          apiKey: getResponseApiKey
+        }
       });
 
-      if (response.ok) {
-        const lists = await response.json();
-        setGetResponseLists(lists);
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data && Array.isArray(data)) {
+        setGetResponseLists(data);
         localStorage.setItem('getResponseApiKey', getResponseApiKey);
         
         toast({
           title: "Connected!",
-          description: `Successfully connected to GetResponse. Found ${lists.length} lists.`,
+          description: `Successfully connected to GetResponse. Found ${data.length} lists.`,
         });
       } else {
-        throw new Error('Invalid API key or connection failed');
+        throw new Error('Invalid response from GetResponse API');
       }
     } catch (error) {
       console.error('GetResponse connection error:', error);
@@ -184,29 +187,22 @@ const EmailScraper = () => {
       const allEmails = emails.flatMap(entry => entry.emails);
       const uniqueEmails = [...new Set(allEmails)];
       
-      // Add contacts to GetResponse list
-      const contactPromises = uniqueEmails.map(email => 
-        fetch('https://api.getresponse.com/v3/contacts', {
-          method: 'POST',
-          headers: {
-            'X-Auth-Token': `api-key ${getResponseApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: email,
-            campaign: {
-              campaignId: selectedList
-            }
-          })
-        })
-      );
+      const { data, error } = await supabase.functions.invoke('getresponse-api', {
+        body: {
+          action: 'addContacts',
+          apiKey: getResponseApiKey,
+          listId: selectedList,
+          emails: uniqueEmails
+        }
+      });
 
-      const results = await Promise.allSettled(contactPromises);
-      const successful = results.filter(result => result.status === 'fulfilled' && result.value.ok).length;
-      
+      if (error) {
+        throw new Error(error.message);
+      }
+
       toast({
         title: "Success!",
-        description: `Successfully added ${successful} out of ${uniqueEmails.length} emails to your GetResponse list.`,
+        description: `Successfully added ${data.successful} out of ${data.total} emails to your GetResponse list.`,
       });
     } catch (error) {
       console.error('Send to GetResponse error:', error);
