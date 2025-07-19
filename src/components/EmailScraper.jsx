@@ -128,7 +128,7 @@ const EmailScraper = () => {
     setIsConnecting(true);
     try {
       // GetResponse API call to get campaigns (lists)
-      const response = await fetch('https://api.getresponse.com/v3/campaigns', {
+      const response = await fetch('https://api.getresponse.com/v3', {
         headers: {
           'X-Auth-Token': `api-key ${getResponseApiKey}`,
           'Content-Type': 'application/json',
