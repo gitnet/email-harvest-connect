@@ -12,6 +12,8 @@ const EmailScraper = () => {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [emails, setEmails] = useState([]);
+  const [scrapeMode, setScrapeMode] = useState('url'); // 'url' or 'google'
+
   const [getResponseApiKey, setGetResponseApiKey] = useState('');
   const [getResponseLists, setGetResponseLists] = useState([]);
   const [selectedList, setSelectedList] = useState('');
@@ -68,14 +70,28 @@ const EmailScraper = () => {
     try {
       // Note: Due to CORS limitations, we're using a proxy service
       // In a real-world scenario, you'd need a backend service
+      let scrapedContent = '';
+     if (scrapeMode === 'url') {
       const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
       const response = await fetch(proxyUrl);
       const data = await response.json();
-      
-      if (data.contents) {
-        const foundEmails = extractEmails(data.contents);
-        const uniqueEmails = [...new Set(foundEmails)];
-        const domain = getDomain(url);
+      scrapedContent = data.contents;
+    } else if (scrapeMode === 'google') {
+      const response = await fetch(`/api/scrape-google?q=${encodeURIComponent(url)}`);
+      const data = await response.json();
+      scrapedContent = data.contents;
+    }
+    console.log('Scraped Content:', scrapedContent);
+    if (scrapedContent) {
+        const foundEmails = extractEmails(scrapedContent);
+        const emailTypes = foundEmails.map(email => {
+          const parts = email.split('@');
+          return parts[1]; // مثلا gmail.com
+        });
+        if(emailTypes == 'gmail.com' || emailTypes == 'yahoo.com' || emailTypes == 'hotmail.com') {
+          const uniqueEmails = [...new Set(foundEmails)];
+
+          const domain = getDomain(url);
         
         if (uniqueEmails.length > 0) {
           const newEmailEntry = {
@@ -100,6 +116,7 @@ const EmailScraper = () => {
             description: "No email addresses were found on this website",
             variant: "destructive",
           });
+        }
         }
       }
     } catch (error) {
@@ -243,6 +260,15 @@ const EmailScraper = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4">
+             <Select value={scrapeMode} onValueChange={setScrapeMode}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Scrape Mode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="url">Website URL</SelectItem>
+                <SelectItem value="google">Google Search</SelectItem>
+              </SelectContent>
+            </Select>
             <Input
               placeholder="https://example.com"
               value={url}
@@ -279,7 +305,7 @@ const EmailScraper = () => {
             GetResponse Integration
           </CardTitle>
           <CardDescription>
-            Connect your GetResponse account to send scraped emails
+            Connect your GetResponse account to send scraped emails. If you don't have an API key, signup at <a href="https://www.getresponse.com?a=WNXT7tMYMJ" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">GetResponse</a>.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
