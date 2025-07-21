@@ -33,7 +33,7 @@ const Index = () => {
           <p className="text-muted-foreground">
             Built with React and powered by Devismail - Email Harvest Tool
             <br />
-            <h5>Support us</h5>
+            <b>Support us</b>
           </p>
           <p className='text-muted-foreground'>
             <img src="../../public/images/bmc_qr.png" alt="Devismail Logo" className="h-20 inline-block" />

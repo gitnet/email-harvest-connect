@@ -2,11 +2,11 @@
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/4c227f71-486a-4a96-97b5-da6c82b6c707
+**Tools Name**: Emails Scraper Tool
 
-## How can I edit this code?
+## How To install the project?
 
-There are several ways of editing your application.
+Go to github link and follow the instruction below.
 
 **Use Lovable**
 

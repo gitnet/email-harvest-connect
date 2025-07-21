@@ -21,7 +21,7 @@ const EmailScraper = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
-
+  const baseUrl =  'http://localhost:5055';
   // Load saved data from localStorage
   useEffect(() => {
     const savedEmails = localStorage.getItem('scrapedEmails');
@@ -41,17 +41,36 @@ const EmailScraper = () => {
   };
 
   // Extract emails from text using regex
-  const extractEmails = (text) => {
-    const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
-    return text.match(emailRegex) || [];
-  };
+  // const extractEmails = (text) => {
+  //   const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+  //   return text.match(emailRegex) || [];
+  // };
+const extractEmails = (text) => {
+  if (typeof text !== 'string') return [];
+
+  // Match standard email addresses
+  const plainEmailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
+
+  // Match mailto links (href="mailto:email@example.com")
+  const mailtoRegex = /mailto:([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/gi;
+
+  const plainEmails = text.match(plainEmailRegex) || [];
+
+  const mailtoMatches = [...text.matchAll(mailtoRegex)];
+  const mailtoEmails = mailtoMatches.map(match => match[1]);
+
+  // Combine and deduplicate emails
+  const allEmails = [...new Set([...plainEmails, ...mailtoEmails])];
+
+  return allEmails;
+};
 
   // Get domain from URL
   const getDomain = (url) => {
     try {
       return new URL(url).hostname;
     } catch {
-      return 'unknown';
+      return 'Custom query';
     }
   };
 
@@ -67,69 +86,73 @@ const EmailScraper = () => {
     }
 
     setIsLoading(true);
-    try {
-      // Note: Due to CORS limitations, we're using a proxy service
-      // In a real-world scenario, you'd need a backend service
-      let scrapedContent = '';
-     if (scrapeMode === 'url') {
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-      const response = await fetch(proxyUrl);
-      const data = await response.json();
-      scrapedContent = data.contents;
-    } else if (scrapeMode === 'google') {
-      const response = await fetch(`/api/scrape-google?q=${encodeURIComponent(url)}`);
-      const data = await response.json();
-      scrapedContent = data.contents;
-    }
-    console.log('Scraped Content:', scrapedContent);
-    if (scrapedContent) {
-        const foundEmails = extractEmails(scrapedContent);
-        const emailTypes = foundEmails.map(email => {
-          const parts = email.split('@');
-          return parts[1]; // مثلا gmail.com
-        });
-        if(emailTypes == 'gmail.com' || emailTypes == 'yahoo.com' || emailTypes == 'hotmail.com') {
-          const uniqueEmails = [...new Set(foundEmails)];
+try {
+  let scrapedContent = '';
 
-          const domain = getDomain(url);
-        
-        if (uniqueEmails.length > 0) {
-          const newEmailEntry = {
-            domain,
-            url,
-            emails: uniqueEmails,
-            scrapedAt: new Date().toISOString(),
-            id: Date.now()
-          };
-          
-          const updatedEmails = [newEmailEntry, ...emails];
-          setEmails(updatedEmails);
-          saveEmails(updatedEmails);
-          
-          toast({
-            title: "Success!",
-            description: `Found ${uniqueEmails.length} emails from ${domain}`,
-          });
-        } else {
-          toast({
-            title: "No emails found",
-            description: "No email addresses were found on this website",
-            variant: "destructive",
-          });
-        }
-        }
-      }
-    } catch (error) {
-      console.error('Scraping error:', error);
+  if (scrapeMode === 'url') {
+        // Scrape emails from the provided URL
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        const data = await response.json();
+        scrapedContent = data.contents;
+
+  } else if (scrapeMode === 'google') {
+      // Scrape emails from Google search results
+        const response = await fetch(`${baseUrl}/api/scrape?q=${encodeURIComponent(url)}`);
+        const data = await response.json();
+        scrapedContent = data; // نستخدم الكائن كاملًا وليس فقط emails
+  }
+
+
+  if (scrapedContent) {
+    const foundEmails = scrapeMode === 'google' && Array.isArray(scrapedContent.emails)
+    ? scrapedContent.emails
+    : extractEmails(scrapedContent);
+
+    const uniqueEmails = [...new Set(foundEmails)];
+
+    if (uniqueEmails.length > 0) {
+      const domain = getDomain(url);
+      
+      const newEmailEntry = {
+        domain,
+        url,
+        emails: uniqueEmails,
+        scrapedAt: new Date().toISOString(),
+        id: Date.now()
+      };
+
+      const updatedEmails = [newEmailEntry, ...emails];
+      setEmails(updatedEmails);
+      saveEmails(updatedEmails);
+
+      // ✅ إرسال الإيميلات إلى GetResponse
+      await sendToGetResponse(uniqueEmails, domain);
+
       toast({
-        title: "Error",
-        description: "Failed to scrape the website. Please check the URL and try again.",
+        title: "Success!",
+        description: `Found ${uniqueEmails.length} emails from ${domain}`,
+      });
+    } else {
+      toast({
+        title: "No emails found",
+        description: "No email addresses were found on this website",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
-      setUrl('');
     }
+  }
+} catch (error) {
+  console.error('Scraping error:', error);
+  toast({
+    title: "Error",
+    description: "Failed to scrape the website. Please check the URL and try again.",
+    variant: "destructive",
+  });
+} finally {
+  setIsLoading(false);
+  setUrl('');
+}
+
   };
 
   // Connect to GetResponse API
@@ -221,7 +244,7 @@ const EmailScraper = () => {
         title: "Success!",
         description: `Successfully added ${data.successful} out of ${data.total} emails to your GetResponse list.`,
       });
-    } catch (error) {
+    } catch (error) { 
       console.error('Send to GetResponse error:', error);
       toast({
         title: "Error",

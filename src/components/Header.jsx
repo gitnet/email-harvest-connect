@@ -1,43 +1,45 @@
-import React from 'react';
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Mail, Github, Download } from "lucide-react";
 
 const Header = () => {
   return (
-    <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="container mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Mail className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                EmailScraper
-              </span>
-            </div>
-          </div>
-          
-          <nav className="hidden md:flex items-center gap-6">
-            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
-              Features
-            </a>
-            <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
-              How it works
-            </a>
-            <a href="#api" className="text-muted-foreground hover:text-foreground transition-colors">
-              API Integration
-            </a>
-          </nav>
+    <header className="w-full bg-white shadow-sm py-4 px-6 flex items-center justify-between">
+      {/* الشعار أو اسم الموقع */}
+      <div className="text-xl font-bold text-primary">
+        <Mail className="inline-block mr-2 font-bold" />
+        Scrap Your List
+      </div>
 
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="hidden md:flex">
-              <Github className="h-5 w-5" />
-            </Button>
-            <Button variant="hero" size="sm" className="hidden md:flex">
-              <Download className="h-4 w-4" />
-              Export Data
-            </Button>
-          </div>
-        </div>
+      {/* قائمة التنقل */}
+        <nav className="mx-auto flex gap-x-3 text-lg">
+          <a
+            href="#features"
+            className="text-muted-foreground hover:text-foreground transition-all duration-300 hover:underline underline-offset-4 hover:scale-105 px-2">
+            Home
+          </a>
+          <a
+            href="#how-it-works"
+            className="text-muted-foreground hover:text-foreground transition-all duration-300 hover:underline underline-offset-4 hover:scale-105 px-2">
+            How it works
+          </a>
+          <a
+            href="#api"
+            className="text-muted-foreground hover:text-foreground transition-all duration-300 hover:underline underline-offset-4 hover:scale-105 px-2">
+            Contact Us
+          </a>
+        </nav>
+
+      {/* الأزرار */}
+      <div className="flex items-center space-x-4">
+        <Button variant="outline" className="flex items-center gap-2">
+          <Github className="w-4 h-4" />
+          GitHub
+        </Button>
+        <Button className="flex items-center gap-2">
+          <Download className="w-4 h-4" />
+          Export Data
+        </Button>
       </div>
     </header>
   );

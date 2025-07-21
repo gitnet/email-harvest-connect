@@ -1,78 +1,71 @@
-// scrape-google.js
-require('dotenv').config();
 const express = require('express');
-const puppeteer = require('puppeteer');
+const axios = require('axios');
 const cors = require('cors');
+const puppeteer = require('puppeteer');
+const bodyParser = require('body-parser');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = 5055;
 
-app.use(cors()); // Enable CORS
-app.use(express.json());
+app.use(cors());
+app.use(bodyParser.json());
 
-app.get('/api/scrape-google', async (req, res) => {
-  const query = req.query.q;
+const extractEmailsFromHtml = (html) => {
+  const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
+  const mailtoRegex = /mailto:([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/gi;
 
-  if (!query) {
-    return res.status(400).json({ error: 'Missing query parameter ?q=' });
-  }
+  const plainEmails = html.match(emailRegex) || [];
+  const mailtoEmails = [...html.matchAll(mailtoRegex)].map(match => match[1]);
+
+  return [...new Set([...plainEmails, ...mailtoEmails])];
+};
+
+app.get('/api/scrape', async (req, res) => {
+  const { q } = req.query;
+
+  if (!q) return res.status(400).json({ error: 'Missing query' });
 
   try {
-    const browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    const serpApiKey = 'e55950cc07b4787add718d407020b8e50215ca15906e04220be492d4aa6092ac'; // استبدله بمفتاحك من SerpAPI
 
+    const searchUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(q)}&api_key=${serpApiKey}`;
+    const response = await axios.get(searchUrl);
+    const organicResults = response.data.organic_results || [];
+
+    const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
-    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
 
-    await page.goto(searchUrl, { waitUntil: 'domcontentloaded' });
+    const results = [];
 
-    // Extract result URLs
-    const resultLinks = await page.$$eval('a', (anchors) =>
-      anchors
-        .map((a) => a.href)
-        .filter((href) => href.startsWith('http') && !href.includes('google.com'))
-    );
-
-    const emailsSet = new Set();
-
-    for (const link of resultLinks.slice(0, 5)) {
+    for (let result of organicResults.slice(0, 5)) {
+      const url = result.link;
       try {
-        const subPage = await browser.newPage();
-        await subPage.goto(link, { waitUntil: 'domcontentloaded', timeout: 15000 });
-
-        const content = await subPage.evaluate(() => document.body.innerText);
-        const emails = content.match(
-          /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g
-        );
-
-        if (emails && emails.length > 0) {
-          emails.forEach((email) => emailsSet.add(email));
-        }
-
-        await subPage.close();
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+        const html = await page.content();
+        const emails = extractEmailsFromHtml(html);
+        results.push({ url, emails });
       } catch (err) {
-        console.warn(`Could not load ${link}: ${err.message}`);
+        results.push({ url, emails: [], error: true, message: err.message });
       }
     }
 
     await browser.close();
 
-    const foundEmails = Array.from(emailsSet);
+    const allEmails = results.flatMap(r => r.emails);
+    const uniqueEmails = [...new Set(allEmails)];
 
-    return res.json({
-      query,
-      totalFound: foundEmails.length,
-      emails: foundEmails,
-      contents: foundEmails.join('\n'),
+    res.json({
+      query: q,
+      totalFound: uniqueEmails.length,
+      emails: uniqueEmails,
+      contents: results
     });
   } catch (error) {
-    console.error('Scraping error:', error);
-    return res.status(500).json({ error: 'Internal scraping error' });
+    console.error(error);
+    res.status(500).json({ error: 'Scraping failed', details: error.message });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(` Server running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });

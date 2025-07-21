@@ -44,19 +44,12 @@ const Hero = () => {
               size="lg" 
               variant="hero"
               onClick={scrollToScraper}
-              className="text-lg px-8 py-4"
+              className="text-lg px-8 py-6"
             >
               <Mail className="h-5 w-5 mr-2" />
               Start Scraping Now
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline"
-              className="text-lg px-8 py-4 bg-background/10 border-background/30 text-background hover:bg-background/20"
-            >
-              <Database className="h-5 w-5 mr-2" />
-              View Demo
-            </Button>
+           
           </div>
 
           {/* Features Grid */}
