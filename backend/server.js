@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
@@ -26,7 +27,7 @@ app.get('/api/scrape', async (req, res) => {
   if (!q) return res.status(400).json({ error: 'Missing query' });
 
   try {
-    const serpApiKey = 'e55950cc07b4787add718d407020b8e50215ca15906e04220be492d4aa6092ac'; // استبدله بمفتاحك من SerpAPI
+    const serpApiKey = process.env.SERPAPI_KEY;  // استبدله بمفتاحك من SerpAPI
 
     const searchUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(q)}&api_key=${serpApiKey}`;
     const response = await axios.get(searchUrl);

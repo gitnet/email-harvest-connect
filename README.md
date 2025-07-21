@@ -2,32 +2,22 @@
 
 ## Project info
 
-**Tools Name**: Emails Scraper Tool
+**Tools Name**: Emails Scraper Tool using serApi service from Google
 
 ## How To install the project?
 
 Go to github link and follow the instruction below.
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/4c227f71-486a-4a96-97b5-da6c82b6c707) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+ 
 
 Follow these steps:
 
 ```sh
 # Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone <https://github.com/gitnet/email-harvest-connect.git>
 
 # Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+cd <Emails Scraper Tool>
 
 # Step 3: Install the necessary dependencies.
 npm i
@@ -60,14 +50,28 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
+ 
+ * Supabase connect instructions *
+        Open foler called integrations/supabase then go to file client.ts and put your supabase information inside the variables below 
 
-Simply open [Lovable](https://lovable.dev/projects/4c227f71-486a-4a96-97b5-da6c82b6c707) and click on Share -> Publish.
+        SUPABASE_URL = "<YOUR_SUPABASE_URL>";
+        SUPABASE_PUBLISHABLE_KEY =  "<YOUR_SUPABASE_PUBLISHABLE_KEY>";
 
-## Can I connect a custom domain to my Lovable project?
+        then 
+       Run these commands: 
+        1- npm install -g supabase
+        2- supabase login
+        3- supabase link --project-ref your-project-ref
+                ## your-project-ref => e.g, supabase.com/dashboard/project/gvlsqbccnancbzgeohwp## 
+                gvlsqbccnancbzgeohwp  this is the project-ref so you will put yours 
+        3- Finaly run the deploy command: 
+            supabase functions deploy getresponse-api
 
-Yes, you can!
+    Note if you need any help you can contact me on whatsapp 
+     +46727753891
+    
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+    Support us on 
+      https://buymeacoffee.com/devismail
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
