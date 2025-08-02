@@ -1,13 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Mail, Zap, Database, Send, ArrowDown } from "lucide-react";
+import  FeatureSlider  from "./Featured_grid"; // Assuming this is the path to your Featured_grid component
 
+// مكون Hero  
 const Hero = () => {
+  
   const scrollToScraper = () => {
     document.getElementById('email-scraper')?.scrollIntoView({ behavior: 'smooth' });
   };
+ 
 
+ 
   return (
     <section className="relative overflow-hidden bg-gradient-hero min-h-[80vh] flex items-center">
       {/* Background Elements */}
@@ -22,12 +27,12 @@ const Hero = () => {
           {/* Badge */}
           <Badge variant="secondary" className="mb-6 bg-background/20 text-background border-background/30">
             <Zap className="h-3 w-3 mr-1" />
-            Free & Open Source Email Scraper
+            Free Tool Email Scraper ( 100 searches per month )
           </Badge>
 
           {/* Main Title */}
           <h1 className="text-5xl md:text-7xl font-bold text-background mb-6 leading-tight">
-            Extract Emails from
+            Extract Emails from URL or Google Search
             <span className="block bg-gradient-to-r from-background to-background/80 bg-clip-text text-transparent">
               Any Website
             </span>
@@ -36,6 +41,7 @@ const Hero = () => {
           {/* Description */}
           <p className="text-xl md:text-2xl text-background/90 mb-8 max-w-3xl mx-auto leading-relaxed">
             A powerful React-based tool for scraping email addresses from websites and seamlessly integrating with GetResponse email marketing platform.
+            <br /><br />
           </p>
 
           {/* CTA Buttons */}
@@ -44,7 +50,7 @@ const Hero = () => {
               size="lg" 
               variant="hero"
               onClick={scrollToScraper}
-              className="text-lg px-8 py-6"
+              className="text-lg px-8 py-6 px-4"
             >
               <Mail className="h-5 w-5 mr-2" />
               Start Scraping Now
@@ -53,31 +59,10 @@ const Hero = () => {
           </div>
 
           {/* Features Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <div className="bg-background/10 backdrop-blur-sm rounded-xl p-6 border border-background/20">
-              <Mail className="h-8 w-8 text-background mb-4 mx-auto" />
-              <h3 className="text-lg font-semibold text-background mb-2">Smart Email Extraction</h3>
-              <p className="text-background/80 text-sm">
-                Advanced regex patterns to find all email addresses on any public website
-              </p>
-            </div>
-            
-            <div className="bg-background/10 backdrop-blur-sm rounded-xl p-6 border border-background/20">
-              <Send className="h-8 w-8 text-background mb-4 mx-auto" />
-              <h3 className="text-lg font-semibold text-background mb-2">GetResponse Integration</h3>
-              <p className="text-background/80 text-sm">
-                Direct API connection to send scraped emails to your marketing lists
-              </p>
-            </div>
-            
-            <div className="bg-background/10 backdrop-blur-sm rounded-xl p-6 border border-background/20">
-              <Database className="h-8 w-8 text-background mb-4 mx-auto" />
-              <h3 className="text-lg font-semibold text-background mb-2">Local Storage</h3>
-              <p className="text-background/80 text-sm">
-                Organize and store emails by domain with persistent local storage
-              </p>
-            </div>
-          </div>
+          
+           <FeatureSlider />
+
+          {/* End Features Grid */}
 
           {/* Scroll Indicator */}
           <div className="mt-16">

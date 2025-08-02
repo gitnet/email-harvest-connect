@@ -1,12 +1,13 @@
 import React from 'react';
-import Header from '../components/Header';
+
 import Hero from '../components/Hero';
 import EmailScraper from '../components/EmailScraper';
+
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+     
       <Hero />
       
       {/* Main Scraper Tool */}
@@ -27,19 +28,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-background border-t border-border/50 py-12">
-        <div className="container mx-auto px-6 text-center">
-          <p className="text-muted-foreground">
-            Built with React and powered by Devismail - Email Harvest Tool
-            <br />
-            <b>Support us</b>
-          </p>
-          <p className='text-muted-foreground'>
-            <img src="../../public/images/bmc_qr.png" alt="Devismail Logo" className="h-20 inline-block" />
-          </p>
-        </div>
-      </footer>
+     
     </div>
   );
 };
