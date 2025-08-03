@@ -36,6 +36,7 @@ const EmailScraper = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [EmailTypeValue, setEmailTypeValue] = useState('@gmail.com');
+  const [numResults, setNumResults] = useState(10); // Default to 10 results
   const [keyworkdvalue, setkeyworkdvalue] = useState('intitle:');
   const { toast } = useToast();
   const baseUrl = import.meta.env.VITE_BASE_URL || 'http://localhost:5055';
@@ -116,7 +117,7 @@ try {
   } else if (scrapeMode === 'google') {
     let fullQuery = keyworkdvalue + ' ' + url + ' ' + EmailTypeValue;
       // Scrape emails from Google search results
-        const response = await fetch(`${baseUrl}/api/scrape?q=${encodeURIComponent(fullQuery)}`);
+        const response = await fetch(`${baseUrl}/api/scrape?q=${encodeURIComponent(fullQuery)}&num=${numResults}`);
         const data = await response.json();
         scrapedContent = data; // نستخدم الكائن كاملًا وليس فقط emails
   }
@@ -390,7 +391,23 @@ try {
                 <SelectItem value="@aol.com">@aol.com</SelectItem>
                 </SelectContent>
               </Select> 
-              </>
+              <Select placeholder="Number of Results" value={numResults} onValueChange={setNumResults}>
+                <SelectTrigger className="w-full sm:w-[160px]">
+                  <SelectValue placeholder="Number of Results" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>  
+                  <SelectItem value="30">30</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="200">250</SelectItem>
+                  <SelectItem value="500" disabled>500</SelectItem>
+                  <SelectItem value="1000" disabled>1000</SelectItem>
+                </SelectContent>
+              </Select>
+            </>
+              
               )}  {/* End check if scrape moad is google */}
             <Input
               placeholder={scrapeMode === 'url' ? 'Enter website URL' : 'Enter search query'}

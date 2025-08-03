@@ -5,13 +5,15 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+   base: '/email-harvest-connect/', // ← must match your repo name
+  
   server: {
     host: "::",
     port: 8080,
   },
   plugins: [
     react(),
-    mode === 'development' &&
+    mode === 'production' &&
     componentTagger(),
   ].filter(Boolean),
   resolve: {
@@ -20,3 +22,4 @@ export default defineConfig(({ mode }) => ({
     },
   },
 }));
+

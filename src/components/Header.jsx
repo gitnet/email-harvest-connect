@@ -6,14 +6,15 @@ export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <header className="w-full shadow-sm border-b">
-      <div className="flex items-center justify-between px-6 py-4">
-        <h1 className="text-xl font-bold">Emails Scraper Tool</h1>
+      <div className="flex items-center justify-between px-2 py-4">
+        <img src='./images/scraplogo.png' alt="Logo" className="h-10" />
+        <h1 className="text-xl font-bold">Scrape Your List</h1>
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex gap-4 text-lg">
-          <a href="/" className="text-muted-foreground hover:text-foreground transition-all hover:underline underline-offset-4">Home</a>
-          <a href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-all hover:underline underline-offset-4">How it works</a>
-          <a href="/contact-us" className="text-muted-foreground hover:text-foreground transition-all hover:underline underline-offset-4">Contact us </a>
+          <a href="#" className="text-muted-foreground hover:text-foreground transition-all hover:underline underline-offset-4">Home</a>
+          <a href='#how-it-works' className="text-muted-foreground hover:text-foreground transition-all hover:underline underline-offset-4">How it works</a>
+          <a href="#contact-us" className="text-muted-foreground hover:text-foreground transition-all hover:underline underline-offset-4">Contact us </a>
         </nav>
 
         {/* Desktop Buttons */}

@@ -12,7 +12,9 @@ export default function footer() {
             <b>Support us</b>
           </p>
           <p className='text-muted-foreground'>
-            <img src="../../public/images/bmc_qr.png" alt="Devismail Logo" className="h-20 inline-block" />
+            <center>
+                <img src={'./images/bmc_qr.png'} alt="Devismail Logo" className="h-20 inline-block" />
+            </center>
           </p>
         </div>
       </footer>

@@ -7,7 +7,7 @@ const features = [
     title: "Smart Email Extraction",
     description: "Advanced regex patterns to find all email addresses on any public website",
     Icon: Mail,
-    imageUrl: "../../public/images/extractEmails.png",
+    imageUrl: `./images/extractEmails.png`,
     linkHref: "#Home",
     target: ""
   },
@@ -15,7 +15,7 @@ const features = [
     title: "GetResponse Integration",
     description: "Direct API connection to send scraped emails to your marketing lists",
     Icon: Send,
-    imageUrl: "../../public/images/api_connect.png",
+    imageUrl: `./images/api_connect.png`,
     linkHref: "https://www.getresponse.com?a=WNXT7tMYMJ",
     target: "_blank"
   },
@@ -23,7 +23,7 @@ const features = [
     title: "Export Emails",
     description: "Easily export and organize your collected emails for future campaigns.",
     Icon: Database,
-    imageUrl: "../../public/images/export_emails.png",
+    imageUrl: `./images/export_emails.png`,
     linkHref: "#exportxlsx",
     target: ""
   },
