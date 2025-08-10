@@ -9,8 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx"; // ⬅️ Add this to your imports
 import loadGif from '../../public/images/loadgif.gif'; // Import the loading GIF
+ import  exportEmailsToExcel  from './ExportToExcel'; // Import the export function
+import AsyncSelect from 'react-select/async';
 
-import  exportEmailsToExcel  from './ExportToExcel'; // Import the export function
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,7 @@ const EmailScraper = () => {
   const [isSending, setIsSending] = useState(false);
   const [EmailTypeValue, setEmailTypeValue] = useState('@gmail.com');
   const [numResults, setNumResults] = useState(10); // Default to 10 results
+  const [locationValue, setLocationValue] = useState('us'); // Default to 10 results
   const [keyworkdvalue, setkeyworkdvalue] = useState('intitle:');
   const { toast } = useToast();
   const baseUrl = import.meta.env.VITE_BASE_URL || 'http://localhost:5055';
@@ -104,73 +106,74 @@ const extractEmails = (text) => {
     }
 
     setIsLoading(true);
-try {
-  let scrapedContent = '';
+    try {
+      let scrapedContent = '';
 
-  if (scrapeMode === 'url') {
-        // Scrape emails from the provided URL
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-        const response = await fetch(proxyUrl);
-        const data = await response.json();
-        scrapedContent = data.contents;
+      if (scrapeMode === 'url') {
+            // Scrape emails from the provided URL
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+            const response = await fetch(proxyUrl);
+            const data = await response.json();
+            scrapedContent = data.contents;
 
-  } else if (scrapeMode === 'google') {
-    let fullQuery = keyworkdvalue + ' ' + url + ' ' + EmailTypeValue;
-      // Scrape emails from Google search results
-        const response = await fetch(`${baseUrl}/api/scrape?q=${encodeURIComponent(fullQuery)}&num=${numResults}`);
-        const data = await response.json();
-        scrapedContent = data; // نستخدم الكائن كاملًا وليس فقط emails
-  }
+      } else if (scrapeMode === 'google') {
+        let fullQuery = keyworkdvalue + ' ' + url + ' ' + EmailTypeValue;
+          // Scrape emails from Google search results
+            const response = await fetch(`${baseUrl}/api/scrape?q=${encodeURIComponent(fullQuery)}&location=${locationValue?.value}&num=${numResults}`);
+            // ${numResults}
+            const data = await response.json();
+            scrapedContent = data; // نستخدم الكائن كاملًا وليس فقط emails
+      }
 
 
-  if (scrapedContent) {
-    const foundEmails = scrapeMode === 'google' && Array.isArray(scrapedContent.emails)
-    ? scrapedContent.emails
-    : extractEmails(scrapedContent);
+      if (scrapedContent) {
+        const foundEmails = scrapeMode === 'google' && Array.isArray(scrapedContent.emails)
+        ? scrapedContent.emails
+        : extractEmails(scrapedContent);
 
-    const uniqueEmails = [...new Set(foundEmails)];
+        const uniqueEmails = [...new Set(foundEmails)];
 
-    if (uniqueEmails.length > 0) {
-      const domain = getDomain(url);
-      
-      const newEmailEntry = {
-        domain,
-        url,
-        emails: uniqueEmails,
-        scrapedAt: new Date().toISOString(),
-        id: Date.now()
-      };
+        if (uniqueEmails.length > 0) {
+          const domain = getDomain(url);
+          
+          const newEmailEntry = {
+            domain,
+            url,
+            emails: uniqueEmails,
+            scrapedAt: new Date().toISOString(),
+            id: Date.now()
+          };
 
-      const updatedEmails = [newEmailEntry, ...emails];
-      setEmails(updatedEmails);
-      saveEmails(updatedEmails);
+          const updatedEmails = [newEmailEntry, ...emails];
+          setEmails(updatedEmails);
+          saveEmails(updatedEmails);
 
-      // ✅ إرسال الإيميلات إلى GetResponse
-      await sendToGetResponse(uniqueEmails, domain);
+          // ✅ إرسال الإيميلات إلى GetResponse
+          await sendToGetResponse(uniqueEmails, domain);
 
+          toast({
+            title: "Success!",
+            description: `Found ${uniqueEmails.length} emails from ${domain}`,
+          });
+        } else {
+          toast({
+            title: "No emails found",
+            description: "No email addresses were found on this website",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Scraping error:', error);
       toast({
-        title: "Success!",
-        description: `Found ${uniqueEmails.length} emails from ${domain}`,
-      });
-    } else {
-      toast({
-        title: "No emails found",
-        description: "No email addresses were found on this website",
+        title: "Error",
+        description: "Failed to scrape the website. Please check the URL and try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
+      setUrl('');
     }
-  }
-} catch (error) {
-  console.error('Scraping error:', error);
-  toast({
-    title: "Error",
-    description: "Failed to scrape the website. Please check the URL and try again.",
-    variant: "destructive",
-  });
-} finally {
-  setIsLoading(false);
-  setUrl('');
-}
 
   };
 
@@ -297,146 +300,159 @@ try {
           description: "Email entry has been removed.",
         });
   };
-
-
-  const totalEmails = emails.reduce((sum, entry) => sum + entry.emails.length, 0);
-  
+   const totalEmails = emails.reduce((sum, entry) => sum + entry.emails.length, 0);
+   const loadLocations = (inputValue, callback) => {
+    fetch(`${baseUrl}/api/locations?query=${inputValue}&limit=20`)
+      .then(res => res.json())
+      .then(data => {
+        callback(data.map(loc => ({
+          value: loc.name.toLowerCase(),
+          label: loc.country_code + '( ' + loc.name + ' )',
+        })));
+      });
+  };
   return (
     <div className="space-y-8">
       {/* URL Input Section */}
-      <Card className="shadow-card border-0 bg-background/50 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-primary" />
-            Website URL Scraper
-          </CardTitle>
-          <CardDescription>
-            Enter any website URL to extract email addresses or use Google search to find emails.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-             <Select value={scrapeMode} onValueChange={setScrapeMode}>
-              <SelectTrigger className="w-full sm:w-[160px]">
-                <SelectValue placeholder="Scrape Mode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="url">Website URL</SelectItem>
-                <SelectItem value="google">Google Search</SelectItem>
-              </SelectContent>
-            </Select>
-            {scrapeMode === 'google' && (
+     <Card className="shadow-card border-0 bg-background/50 backdrop-blur-sm">
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <Globe className="h-5 w-5 text-primary" />
+      Website URL Scraper
+    </CardTitle>
+    <CardDescription>
+      Enter any website URL to extract email addresses or use Google search to find emails.
+    </CardDescription>
+  </CardHeader>
+  <CardContent className="space-y-4">
+    {/* URL Mode Layout */}
+    {scrapeMode === 'url' && (
+      <div className="flex flex-wrap items-center gap-4">
+        <Select value={scrapeMode} onValueChange={setScrapeMode}>
+          <SelectTrigger className="w-full sm:w-[160px]">
+            <SelectValue placeholder="Scrape Mode" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="url">Website URL</SelectItem>
+            <SelectItem value="google">Google Search</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input
+          placeholder="Enter website URL"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          className="flex-1"
+          onKeyPress={(e) => e.key === 'Enter' && scrapeWebsite()}
+        />
+        <Button
+          onClick={scrapeWebsite}
+          disabled={isLoading}
+          className="px-5 py-3 w-full sm:w-auto"
+        >
+          {isLoading ? (
             <>
-            <Select placeholder="Select Keyword value" value={keyworkdvalue} onValueChange={setkeyworkdvalue}>
-              <SelectTrigger className="w-full sm:w-[160px]">
-                <SelectValue placeholder="Keyword" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="email">Email</SelectItem>
-                <SelectItem value="contact us">Contact us</SelectItem> 
-                <SelectItem value="intitle:">In-title </SelectItem>
-                <SelectItem value="site:linkedin.com/in">Site:linkedin.com/in</SelectItem>
-                <SelectItem value="site:github.com">Site:github.com</SelectItem>
-                <SelectItem value="site:twitter.com">Site:twitter.com</SelectItem>
-                <SelectItem value="site:facebook.com">Site:facebook.com</SelectItem>
-                <SelectItem value="site:instagram.com">Site:instagram.com</SelectItem>
-                <SelectItem value="site:youtube.com">Site:youtube.com</SelectItem>
-                <SelectItem value="site:reddit.com">Site:reddit.com</SelectItem>
-                <SelectItem value="site:quora.com">Site:quora.com</SelectItem>
-                <SelectItem value="site:medium.com">Site:medium.com</SelectItem>
-                <SelectItem value="site:stackoverflow.com">Site:stackoverflow.com</SelectItem>
-                <SelectItem value="site:producthunt.com">Site:producthunt.com</SelectItem>
-                <SelectItem value="site:dribbble.com">Site:dribbble.com</SelectItem>
-                <SelectItem value="site:behance.net">Site:behance.net</SelectItem>
-                <SelectItem value="site:dev.to">Site:dev.to</SelectItem>
-                <SelectItem value="site:angel.co">Site:angel.co</SelectItem>
-                <SelectItem value="site:crunchbase.com">Site:crunchbase.com</SelectItem>
-                <SelectItem value="site:forbes.com">Site:forbes.com</SelectItem>
-                <SelectItem value="site:inc.com">Site:inc.com</SelectItem>  
-                <SelectItem value="site:techcrunch.com">Site:techcrunch.com</SelectItem>
-                <SelectItem value="site:wired.com">Site:wired.com</SelectItem>
-                <SelectItem value="site:theverge.com">Site:theverge.com</SelectItem>
-                <SelectItem value="site:bbc.com">Site:bbc.com</SelectItem>
-                <SelectItem value="site:cnn.com">Site:cnn.com</SelectItem>
-                <SelectItem value="site:nytimes.com">Site:nytimes.com</SelectItem>
-                <SelectItem value="site:theguardian.com">Site:theguardian.com</SelectItem>
-                <SelectItem value="site:aljazeera.com">Site:aljazeera.com</SelectItem>
-                <SelectItem value="site:reuters.com">Site:reuters.com</SelectItem>
-                <SelectItem value="site:bbc.co.uk">Site:bbc.co.uk</SelectItem>
-                <SelectItem value="site:thetimes.co.uk">Site:thetimes.co.uk</SelectItem>
-                <SelectItem value="site:thetelegraph.co.uk">Site:thetelegraph.co.uk</SelectItem>
-                <SelectItem value="site:theindependent.co.uk">Site:theindependent.co.uk</SelectItem>
-                <SelectItem value="site:theeconomist.com">Site:theeconomist.com</SelectItem>
-                <SelectItem value="site:theatlantic.com">Site:theatlantic.com</SelectItem>
-                <SelectItem value="site:vox.com">Site:vox.com</SelectItem>
-                <SelectItem value="site:slate.com">Site:slate.com</SelectItem>
-                <SelectItem value="site:thehill.com">Site:thehill.com</SelectItem>
-                <SelectItem value="site:politico.com">Site:politico.com</SelectItem>
-                <SelectItem value="site:foreignpolicy.com">Site:foreignpolicy.com</SelectItem>
-                <SelectItem value="site:axios.com">Site:axios.com</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={EmailTypeValue}
-              onValueChange={setEmailTypeValue}>  
-              <SelectTrigger className="w-full sm:w-[160px]">
-                <SelectValue placeholder="Email Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="@gmail.com">@gmail.com</SelectItem>
-                <SelectItem value="@yahoo.com">@yahoo.com</SelectItem>
-                <SelectItem value="@hotmail.com">@hotmail.com</SelectItem>
-                <SelectItem value="@outlook.com">@outlook.com</SelectItem>
-                <SelectItem value="@icloud.com">@icloud.com</SelectItem>
-                <SelectItem value="@aol.com">@aol.com</SelectItem>
-                </SelectContent>
-              </Select> 
-              <Select placeholder="Number of Results" value={numResults} onValueChange={setNumResults}>
-                <SelectTrigger className="w-full sm:w-[160px]">
-                  <SelectValue placeholder="Number of Results" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>  
-                  <SelectItem value="30">30</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                  <SelectItem value="200">250</SelectItem>
-                  <SelectItem value="500" disabled>500</SelectItem>
-                  <SelectItem value="1000" disabled>1000</SelectItem>
-                </SelectContent>
-              </Select>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Scraping...
             </>
-              
-              )}  {/* End check if scrape moad is google */}
-            <Input
-              placeholder={scrapeMode === 'url' ? 'Enter website URL' : 'Enter search query'}
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="w-full"
-              onKeyPress={(e) => e.key === 'Enter' && scrapeWebsite()}
-            />
-           
-            <Button 
-              onClick={scrapeWebsite} 
-              disabled={isLoading}
-              className="w-full sm:min-w-[120px]"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Scraping...
-                </>
-              ) : (
-                <>
-                  <Globe className="h-4 w-4" />
-                  Scrape
-                </>
-              )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          ) : (
+            <>
+              <Globe className="h-4 w-4" />
+              Scrape
+            </>
+          )}
+        </Button>
+      </div>
+    )}
+
+    {/* Google Mode Layout */}
+    {scrapeMode === 'google' && (
+      <div className="flex flex-col gap-4">
+        <Select value={scrapeMode} onValueChange={setScrapeMode}>
+          <SelectTrigger className="w-full sm:w-[160px]">
+            <SelectValue placeholder="Scrape Mode" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="url">Website URL</SelectItem>
+            <SelectItem value="google">Google Search</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={keyworkdvalue} onValueChange={setkeyworkdvalue}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Keyword" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="email">Email</SelectItem>
+            <SelectItem value="contact us">Contact us</SelectItem>
+            <SelectItem value="intitle:">In-title</SelectItem>
+            <SelectItem value="site:linkedin.com/in">Site:linkedin.com/in</SelectItem>
+            {/* باقي العناصر كما هي */}
+          </SelectContent>
+        </Select>
+
+        <Select value={EmailTypeValue} onValueChange={setEmailTypeValue}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Email Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="@gmail.com">@gmail.com</SelectItem>
+            <SelectItem value="@yahoo.com">@yahoo.com</SelectItem>
+            <SelectItem value="@hotmail.com">@hotmail.com</SelectItem>
+            {/* باقي العناصر كما هي */}
+          </SelectContent>
+        </Select>
+
+        <Select value={numResults} onValueChange={setNumResults}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Number of Results" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="10">10</SelectItem>
+            <SelectItem value="20">20</SelectItem>
+            <SelectItem value="30">30</SelectItem>
+            {/* باقي العناصر كما هي */}
+          </SelectContent>
+        </Select>
+
+        <AsyncSelect
+          cacheOptions
+          loadOptions={loadLocations}
+          defaultOptions
+          value={locationValue}
+          onChange={(selectedOption) => setLocationValue(selectedOption)}
+          placeholder="Search location..."
+        />
+
+        <Input
+          placeholder="Enter search query"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          className="w-full"
+          onKeyPress={(e) => e.key === 'Enter' && scrapeWebsite()}
+        />
+
+        <Button
+          onClick={scrapeWebsite}
+          disabled={isLoading}
+          className="px-5 py-3 w-full sm:w-auto"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Scraping...
+            </>
+          ) : (
+            <>
+              <Globe className="h-4 w-4" />
+              Scrape
+            </>
+          )}
+        </Button>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
             {isLoading ? (
                
                  <img src={loadGif} alt="Loading..." className="mx-auto mt-4" style={{ width: '100px', height: '100px' }} />  
