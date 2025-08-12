@@ -3,7 +3,7 @@ import * as XLSX from "xlsx"; // ⬅️ Add this to your imports
 
  
       // Extract emails to excel file 
-  export default function exportEmailsToExcel (emails) {
+  export default function exportEmailsToExcel (emails ) {
       const rows = [];
 
       emails.forEach((entry) => {

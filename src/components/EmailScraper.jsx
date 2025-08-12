@@ -61,14 +61,10 @@ const EmailScraper = () => {
   };
 
   // Extract emails from text using regex
-  // const extractEmails = (text) => {
-  //   const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
-  //   return text.match(emailRegex) || [];
-  // };
-const extractEmails = (text) => {
+  
+const extractEmails = (text ) => {
   if (typeof text !== 'string') return [];
-
-  // Match standard email addresses
+   // Match standard email addresses
   const plainEmailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
 
   // Match mailto links (href="mailto:email@example.com")
@@ -84,6 +80,7 @@ const extractEmails = (text) => {
 
   return allEmails;
 };
+ 
 
   // Get domain from URL
   const getDomain = (url) => {
@@ -117,19 +114,20 @@ const extractEmails = (text) => {
             scrapedContent = data.contents;
 
       } else if (scrapeMode === 'google') {
-        let fullQuery = keyworkdvalue + ' ' + url + ' ' + EmailTypeValue;
-          // Scrape emails from Google search results
-            const response = await fetch(`${baseUrl}/api/scrape?q=${encodeURIComponent(fullQuery)}&location=${locationValue?.value}&num=${numResults}`);
-            // ${numResults}
+            let fullQuery = keyworkdvalue + ' ' + url + ' " ' + locationValue?.value + ' " ' + ' "' + EmailTypeValue + '"';
+            
+            // إرسال emailType للسيرفر
+            const response = await fetch(`${baseUrl}/api/scrape?q=${encodeURIComponent(fullQuery)}&location=${locationValue?.value}&num=${numResults}&emailType=${encodeURIComponent(EmailTypeValue)}`);
+            
             const data = await response.json();
-            scrapedContent = data; // نستخدم الكائن كاملًا وليس فقط emails
-      }
+            scrapedContent = data;
+          }
 
 
       if (scrapedContent) {
         const foundEmails = scrapeMode === 'google' && Array.isArray(scrapedContent.emails)
         ? scrapedContent.emails
-        : extractEmails(scrapedContent);
+        : extractEmails(scrapedContent );
 
         const uniqueEmails = [...new Set(foundEmails)];
 
@@ -154,6 +152,7 @@ const extractEmails = (text) => {
           toast({
             title: "Success!",
             description: `Found ${uniqueEmails.length} emails from ${domain}`,
+            variant: "success",
           });
         } else {
           toast({
@@ -208,6 +207,7 @@ const extractEmails = (text) => {
         toast({
           title: "Connected!",
           description: `Successfully connected to GetResponse. Found ${data.length} lists.`,
+          variant: "success",
         });
       } else {
         throw new Error('Invalid response from GetResponse API');
@@ -265,9 +265,9 @@ const extractEmails = (text) => {
       toast({
         title: "Success!",
         description: `Successfully added ${data.successful} out of ${data.total} emails to your GetResponse list.`,
+        variant: "success",
       });
     } catch (error) { 
-      console.error('Send to GetResponse error:', error);
       toast({
         title: "Error",
         description: "Failed to send emails to GetResponse. Please try again.",
@@ -300,168 +300,169 @@ const extractEmails = (text) => {
           description: "Email entry has been removed.",
         });
   };
-   const totalEmails = emails.reduce((sum, entry) => sum + entry.emails.length, 0);
-   const loadLocations = (inputValue, callback) => {
+
+  const loadLocations = (inputValue, callback) => {
     fetch(`${baseUrl}/api/locations?query=${inputValue}&limit=20`)
       .then(res => res.json())
       .then(data => {
         callback(data.map(loc => ({
-          value: loc.name.toLowerCase(),
+          value: loc.country_code.toLowerCase(),
           label: loc.country_code + '( ' + loc.name + ' )',
         })));
       });
-  };
+   };
+
+  // Calculate total number of emails
+   const totalEmails = emails.reduce((sum, entry) => sum + entry.emails.length, 0);
+   
   return (
     <div className="space-y-8">
       {/* URL Input Section */}
-     <Card className="shadow-card border-0 bg-background/50 backdrop-blur-sm">
-  <CardHeader>
-    <CardTitle className="flex items-center gap-2">
-      <Globe className="h-5 w-5 text-primary" />
-      Website URL Scraper
-    </CardTitle>
-    <CardDescription>
-      Enter any website URL to extract email addresses or use Google search to find emails.
-    </CardDescription>
-  </CardHeader>
-  <CardContent className="space-y-4">
-    {/* URL Mode Layout */}
-    {scrapeMode === 'url' && (
-      <div className="flex flex-wrap items-center gap-4">
-        <Select value={scrapeMode} onValueChange={setScrapeMode}>
-          <SelectTrigger className="w-full sm:w-[160px]">
-            <SelectValue placeholder="Scrape Mode" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="url">Website URL</SelectItem>
-            <SelectItem value="google">Google Search</SelectItem>
-          </SelectContent>
-        </Select>
-        <Input
-          placeholder="Enter website URL"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          className="flex-1"
-          onKeyPress={(e) => e.key === 'Enter' && scrapeWebsite()}
-        />
-        <Button
-          onClick={scrapeWebsite}
-          disabled={isLoading}
-          className="px-5 py-3 w-full sm:w-auto"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Scraping...
-            </>
-          ) : (
-            <>
-              <Globe className="h-4 w-4" />
-              Scrape
-            </>
+      <Card className="shadow-card border-0 bg-background/50 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5 text-primary" />
+            Website URL Scraper
+          </CardTitle>
+          <CardDescription>
+            Enter any website URL to extract email addresses or use Google search to find emails.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* URL Mode Layout */}
+          {scrapeMode === 'url' && (
+            <div className="flex flex-wrap items-center gap-4">
+              <Select value={scrapeMode} onValueChange={setScrapeMode}>
+                <SelectTrigger className="w-full sm:w-[160px]">
+                  <SelectValue placeholder="Scrape Mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="url">Website URL</SelectItem>
+                  <SelectItem value="google">Google Search</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="Enter website URL"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                className="flex-1"
+                onKeyPress={(e) => e.key === 'Enter' && scrapeWebsite()}
+              />
+              <Button
+                onClick={scrapeWebsite}
+                disabled={isLoading}
+                className="px-5 py-3 w-full sm:w-auto"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Scraping...
+                  </>
+                ) : (
+                  <>
+                    <Globe className="h-4 w-4" />
+                    Scrape
+                  </>
+                )}
+              </Button>
+            </div>
           )}
-        </Button>
-      </div>
-    )}
 
-    {/* Google Mode Layout */}
-    {scrapeMode === 'google' && (
-      <div className="flex flex-col gap-4">
-        <Select value={scrapeMode} onValueChange={setScrapeMode}>
-          <SelectTrigger className="w-full sm:w-[160px]">
-            <SelectValue placeholder="Scrape Mode" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="url">Website URL</SelectItem>
-            <SelectItem value="google">Google Search</SelectItem>
-          </SelectContent>
-        </Select>
+          {/* Google Mode Layout */}
+          {scrapeMode === 'google' && (
+            <div className="flex flex-col gap-4">
+              <Select value={scrapeMode} onValueChange={setScrapeMode}>
+                <SelectTrigger className="w-full sm:w-[160px]">
+                  <SelectValue placeholder="Scrape Mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="url">Website URL</SelectItem>
+                  <SelectItem value="google">Google Search</SelectItem>
+                </SelectContent>
+              </Select>
 
-        <Select value={keyworkdvalue} onValueChange={setkeyworkdvalue}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Keyword" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="email">Email</SelectItem>
-            <SelectItem value="contact us">Contact us</SelectItem>
-            <SelectItem value="intitle:">In-title</SelectItem>
-            <SelectItem value="site:linkedin.com/in">Site:linkedin.com/in</SelectItem>
-            {/* باقي العناصر كما هي */}
-          </SelectContent>
-        </Select>
+              <Select value={keyworkdvalue} onValueChange={setkeyworkdvalue}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Keyword" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="contact us">Contact us</SelectItem>
+                  <SelectItem value="intitle:">In-title</SelectItem>
+                  <SelectItem value="site:linkedin.com/in">Site:linkedin.com/in</SelectItem>
+                  {/* باقي العناصر كما هي */}
+                </SelectContent>
+              </Select>
 
-        <Select value={EmailTypeValue} onValueChange={setEmailTypeValue}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Email Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="@gmail.com">@gmail.com</SelectItem>
-            <SelectItem value="@yahoo.com">@yahoo.com</SelectItem>
-            <SelectItem value="@hotmail.com">@hotmail.com</SelectItem>
-            {/* باقي العناصر كما هي */}
-          </SelectContent>
-        </Select>
+              <Select value={EmailTypeValue} onValueChange={setEmailTypeValue}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Email Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="@gmail.com">@gmail.com</SelectItem>
+                  <SelectItem value="@yahoo.com">@yahoo.com</SelectItem>
+                  <SelectItem value="@hotmail.com">@hotmail.com</SelectItem>
+                  {/* باقي العناصر كما هي */}
+                </SelectContent>
+              </Select>
 
-        <Select value={numResults} onValueChange={setNumResults}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Number of Results" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="10">10</SelectItem>
-            <SelectItem value="20">20</SelectItem>
-            <SelectItem value="30">30</SelectItem>
-            {/* باقي العناصر كما هي */}
-          </SelectContent>
-        </Select>
+              <Select value={numResults} onValueChange={setNumResults}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Number of Results" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="30">30</SelectItem>
+                  {/* باقي العناصر كما هي */}
+                </SelectContent>
+              </Select>
 
-        <AsyncSelect
-          cacheOptions
-          loadOptions={loadLocations}
-          defaultOptions
-          value={locationValue}
-          onChange={(selectedOption) => setLocationValue(selectedOption)}
-          placeholder="Search location..."
-        />
+              <AsyncSelect
+                cacheOptions
+                loadOptions={loadLocations}
+                defaultOptions
+                value={locationValue}
+                onChange={(selectedOption) => setLocationValue(selectedOption)}
+                placeholder="Search location..."
+              />
 
-        <Input
-          placeholder="Enter search query"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          className="w-full"
-          onKeyPress={(e) => e.key === 'Enter' && scrapeWebsite()}
-        />
+              <Input
+                placeholder="Enter search query"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                className="w-full"
+                onKeyPress={(e) => e.key === 'Enter' && scrapeWebsite()}
+              />
 
-        <Button
-          onClick={scrapeWebsite}
-          disabled={isLoading}
-          className="px-5 py-3 w-full sm:w-auto"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Scraping...
-            </>
-          ) : (
-            <>
-              <Globe className="h-4 w-4" />
-              Scrape
-            </>
+              <Button
+                onClick={scrapeWebsite}
+                disabled={isLoading}
+                className="px-5 py-3 w-full sm:w-auto"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Scraping...
+                  </>
+                ) : (
+                  <>
+                    <Globe className="h-4 w-4" />
+                    Scrape
+                  </>
+                )}
+              </Button>
+            </div>
           )}
-        </Button>
-      </div>
-    )}
-  </CardContent>
-</Card>
+        </CardContent>
+      </Card>
 
-            {isLoading ? (
-               
-                 <img src={loadGif} alt="Loading..." className="mx-auto mt-4" style={{ width: '100px', height: '100px' }} />  
-                 
-              ) : (
-               
-                 null
-                 
-              )}
+        {
+          isLoading ? 
+          ( <img src={loadGif} alt="Loading..." className="mx-auto mt-4" style={{ width: '100px', height: '100px' }} />) 
+            : 
+          ( null )
+        }
       {/* GetResponse Integration */}
       <Card className="shadow-card border-0 bg-background/50 backdrop-blur-sm">
         <CardHeader>
@@ -572,7 +573,7 @@ const extractEmails = (text) => {
 
               <Button
                 variant="outline"
-                onClick={() => exportEmailsToExcel(emails)}
+                onClick={() => exportEmailsToExcel(emails , url)}
                 size="sm"
                 className="w-full sm:w-auto gap-2"
               >
@@ -591,7 +592,7 @@ const extractEmails = (text) => {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <CardTitle className="text-base sm:text-lg">{entry.domain}</CardTitle>
                 <Badge variant="secondary" className="w-fit sm:w-auto">
-                    {console.log(entry) }
+                  
                   {entry.emails.length} emails
                 </Badge>
                 <X
